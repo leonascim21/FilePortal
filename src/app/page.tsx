@@ -14,39 +14,6 @@ export default function Home() {
       </div>
 
       {/* </main> */}
-      <footer className="text-white flex gap-6 items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://github.com/iyilmaz24/FilePortal/blob/main/README.md"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          How to use
-        </a>
-
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://github.com/iyilmaz24/FilePortal"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          GitHub Repository
-        </a>
-      </footer>
     </div>
   );
 }
