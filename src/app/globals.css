@@ -25,3 +25,15 @@ body {
     text-wrap: balance;
   }
 }
+
+.purple-bg {
+  background-color: #351c6d;
+}
+
+.dark-purple-bg {
+  background-color: #1b1b4d;
+}
+
+.dark-purple-border {
+  background-color: #000032;
+}
