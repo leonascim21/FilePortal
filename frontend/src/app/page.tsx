@@ -3,6 +3,7 @@ import PortalImage from "@/../public/portal.png";
 import ChestClosed from "@/../public/chest-closed.png";
 import ChestOpened from "@/../public/chest-opened.png";
 import BrandLogo from "@/../public/logos/vertical-white-blue-logo.png";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -16,9 +17,12 @@ export default function Home() {
             width={250}
             height={250}
           />
-          <button className="bg-white text-black px-4 py-2 rounded-md">
-            Store Files
-          </button>
+          <Link href={"/store-files"}>
+            <button className="bg-white text-black px-4 py-2 rounded-md">
+              Store Files
+            </button>
+          </Link>
+
         </div>
         <div>
           <Image
@@ -27,16 +31,20 @@ export default function Home() {
             width={300}
             height={300}
           />
-          <button className="bg-white text-black px-4 py-2 rounded-md">
-            Open Files
-          </button>
+          <Link href={"/open-files"}>
+            <button className="bg-white text-black px-4 py-2 rounded-md">
+              Open Files
+            </button>
+          </Link>
         </div>
 
         <div>
           <Image src={PortalImage} alt="Portal" width={300} height={300} />
-          <button className="bg-white text-black px-4 py-2 rounded-md">
-            Open Portal
-          </button>
+          <Link href={"/portal"}>
+            <button className="bg-white text-black px-4 py-2 rounded-md">
+              Open Portal
+            </button>
+          </Link>
         </div>
       </div>
     </div>
