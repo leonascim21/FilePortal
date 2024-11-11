@@ -1,11 +1,51 @@
 'use client'
-import React from "react"
+import React, { ChangeEvent, FormEvent, useState } from "react";
 import Link from "next/link";
 
-const LoginPage = () => {
+type LoginData = {
+    email: string;
+    password: string;
+};
 
-    const handleSubmit = () => {
-        //TODO: LOGIN LOGIC / ERROR CHECKING!!!!
+const LoginPage = () => {
+    const [formData, setFormData] = useState<LoginData>({
+        email: '',
+        password: ''
+    });
+    const [errorMessage, setErrorMessage] = useState<string>("");
+
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData(prevState => ({
+            ...prevState,
+            [id]: value
+        }));
+    };
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+
+        try {
+            // TODO: CHANGE TO CORRECT BACKEND ENDPOINT
+            const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                const responseData = await response.json();
+                console.log("Login successful:", responseData);
+                window.location.href = '/';
+            } else {
+                setErrorMessage('Login failed. Please check your credentials and try again.');
+            }
+        } catch (error) {
+            setErrorMessage('An unexpected error occurred. Please try again later.');
+            console.error(error);
+        }
     };
 
     return(
@@ -20,6 +60,8 @@ const LoginPage = () => {
                             Email
                         </label>
                         <input id="email"
+                               value={formData.email}
+                               onChange={handleInputChange}
                                className="p-3 border rounded-md focus:outline-none focus:border-purple-500"
                                required pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
                                title="Invalid email address" />
@@ -29,12 +71,16 @@ const LoginPage = () => {
                             Password
                         </label>
                         <input id="password"
+                               type="password"
+                               value={formData.password}
+                               onChange={handleInputChange}
                                className="p-3 border rounded-md focus:outline-none focus:border-purple-500"
                                required/>
                     </div>
                     <button type="submit" className="bg-purple-700 text-white px-4 py-2 rounded-md mt-4 hover:bg-purple-800">
                         Login
                     </button>
+                    {errorMessage && <div className="text-red-500 mt-2">{errorMessage}</div>}
                     <div className="flex justify-between mt-4">
                         <button type="button" className="text-purple-700 hover:underline">Forgot Password?</button>
                         <Link href={"/login/signup"}>
@@ -44,7 +90,7 @@ const LoginPage = () => {
                 </form>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default LoginPage
+export default LoginPage;
