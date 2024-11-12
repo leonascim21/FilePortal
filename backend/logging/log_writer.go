@@ -36,20 +36,24 @@ func LogRequest(endpoint string, entry bool) {
 	}
 }
 
-func LogFileOperation() {
+func LogFileOperation(filename, userID, action string) {
 	logger.Info().
-		//TODO: ADD LOGS INFORMATION
-		//DOWNLOADED/UPLOADED/DELETED/ETC. FILE
+		Str("filename", filename).
+		Str("userID", userID).
+		Str("action", action).
 		Msg("File operation performed")
 }
 
-func LogConnection() {
+func LogConnection(userID, status string) {
 	logger.Info().
-		//TODO: LOG USER CONNECTIONS/DISCONNECTIONS
+		Str("userID", userID).
+		Str("status", status).
 		Msg("Connection event")
 }
 
 func LogCRONJob(jobName, result string) {
 	logger.Info().
+		Str("jobName", jobName).
+		Str("result", result).
 		Msg("CRON job performed")
 }
