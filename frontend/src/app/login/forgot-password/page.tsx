@@ -6,6 +6,7 @@ import Link from "next/link";
 const ForgotPasswordPage = () => {
     const [resetEmail, setResetEmail] = useState<string>("")
     const [submissionMessage, setSubmissionMessage] = useState<[string, boolean]>(["", false]);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         setResetEmail(e.target.value)
@@ -13,6 +14,7 @@ const ForgotPasswordPage = () => {
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true)
 
         try {
             // TODO: CHANGE TO CORRECT BACKEND ENDPOINT
@@ -30,9 +32,11 @@ const ForgotPasswordPage = () => {
                 console.log("Login successful:", responseData);
             } else {
                 setSubmissionMessage(['Request failed. Please check provided email and try again.', false]);
+                setIsSubmitting(false)
             }
         } catch (error) {
             setSubmissionMessage(['An unexpected error occurred. Please try again later.', false]);
+            setIsSubmitting(false)
             console.error(error);
         }
     };
@@ -56,9 +60,14 @@ const ForgotPasswordPage = () => {
                                title="Invalid email address"/>
                     </div>
                     <button type="submit"
-                            className="bg-purple-700 text-white px-4 py-2 rounded-md mt-4 hover:bg-purple-800">
+                            disabled={isSubmitting}
+                            className={`text-white px-4 py-2 rounded-md mt-4 
+                            ${isSubmitting ? 'bg-purple-400 cursor-not-allowed'
+                                           : 'bg-purple-700 hover:bg-purple-800'}`}
+                    >
                         Submit
                     </button>
+
                     {submissionMessage && !submissionMessage[1] && <div className="text-red-500">{submissionMessage}</div>}
                     {submissionMessage && submissionMessage[1] && <div>{submissionMessage}</div>}
                     {submissionMessage && submissionMessage[1] && <div className="flex justify-center mt-1">
