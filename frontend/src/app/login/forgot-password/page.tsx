@@ -7,6 +7,7 @@ const ForgotPasswordPage = () => {
     const [resetEmail, setResetEmail] = useState<string>("")
     const [submissionMessage, setSubmissionMessage] = useState<[string, boolean]>(["", false]);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [countdown, setCountdown] = useState<number>(0);
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         setResetEmail(e.target.value)
@@ -29,6 +30,18 @@ const ForgotPasswordPage = () => {
             if (response.ok) {
                 const responseData = await response.json();
                 setSubmissionMessage(['A link to reset your password has been sent to your email.', true])
+                setCountdown(15);
+                const timer = setInterval(() => {
+                    setCountdown((prevCountdown) => {
+                        if (prevCountdown && prevCountdown > 1) {
+                            return prevCountdown - 1;
+                        } else {
+                            clearInterval(timer);
+                            setIsSubmitting(false);
+                            return 0;
+                        }
+                    });
+                }, 1000);
                 console.log("Login successful:", responseData);
             } else {
                 setSubmissionMessage(['Request failed. Please check provided email and try again.', false]);
@@ -68,6 +81,10 @@ const ForgotPasswordPage = () => {
                         Submit
                     </button>
 
+                    {countdown !== 0 && (
+                        <div className="text-xs text-center text-gray-500 mt-0">
+                            Didn&apos;t get the email? You can resend your request in {countdown} seconds.
+                        </div>)}
                     {submissionMessage && !submissionMessage[1] && <div className="text-red-500">{submissionMessage}</div>}
                     {submissionMessage && submissionMessage[1] && <div>{submissionMessage}</div>}
                     {submissionMessage && submissionMessage[1] && <div className="flex justify-center mt-1">
