@@ -29,8 +29,7 @@ const SignUpPage = () => {
         e.preventDefault();
 
         try {
-            //TODO: CHANGE TO CORRECT BACKEND ENDPOINT
-            const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+            const response = await fetch('http://164.90.136.173:8080/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
