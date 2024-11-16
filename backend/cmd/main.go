@@ -5,27 +5,26 @@ import (
 	"FilePortal/cmd/db"
 	"database/sql"
 	"log"
+	"os"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	db, err := db.NewMySQLStorage(mysql.Config{
-		User:                 "root",
-		Passwd:               "password",
-		Addr:                 "127.0.0.1:3307",
-		DBName:               "files",
-		Net:                  "tcp",
-		AllowNativePasswords: true,
-		ParseTime:            true,
-	})
+	err := godotenv.Load()
+	if err != nil {
+		return
+	}
+	dsn := os.Getenv("DB_DSN")
+
+	database, err := db.NewMySQLStorage(dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	initStorage(db)
+	initStorage(database)
 
-	serv1 := api.NewServer(":8080", db)
+	serv1 := api.NewServer(":8080", database)
 	if err := api.ServerRun(serv1); err != nil {
 		log.Fatal(err)
 	}
