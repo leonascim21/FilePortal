@@ -29,11 +29,12 @@ const SignUpPage = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('http://164.90.136.173:8080/register', {
+            const response = await fetch('https://164.90.136.173:8080/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: "include",
                 body: JSON.stringify(formData)
             });
 
