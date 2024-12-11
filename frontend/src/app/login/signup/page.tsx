@@ -29,7 +29,7 @@ const SignUpPage = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('http://164.90.136.173:8080/register', {
+            const response = await fetch('https://frozen-eliminate-cheap-video.trycloudflare.com/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

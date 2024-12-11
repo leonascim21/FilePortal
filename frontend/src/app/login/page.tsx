@@ -26,7 +26,7 @@ const LoginPage = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('http://164.90.136.173:8080/login', {
+            const response = await fetch('https://frozen-eliminate-cheap-video.trycloudflare.com/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
