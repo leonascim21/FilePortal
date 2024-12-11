@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Each service is of type Handler - it can have whatever dependencies we'd like
@@ -29,6 +30,7 @@ func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var payload types.LoginUserPayload
 	if err := utils.ParseJSON(r, &payload); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	pw, err := h.store.GetUserPasswordByEmail(payload.Email)
@@ -36,8 +38,10 @@ func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("user with email %s does not exist", payload.Email))
 	}
 
-	if payload.Password != pw {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("wrong password"))
+	err = bcrypt.CompareHashAndPassword([]byte(pw), []byte(payload.Password))
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid credentials"))
+		return
 	}
 
 }
@@ -57,11 +61,17 @@ func (h *Handler) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to hash password: %v", err))
+		return
+	}
+
 	err = h.store.CreateUser(types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
-		Password:  payload.Password,
+		Password:  string(hashedPassword),
 		CreatedAt: time.Now(),
 	})
 
