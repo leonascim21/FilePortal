@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Server struct {
@@ -28,6 +29,15 @@ func ServerRun(server *Server) error {
 	userHandler := user.NewHandler(userStore)
 	userHandler.RegisterRoutes(r)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(r)
+
 	log.Println("Listening on: ", server.address)
-	return http.ListenAndServe(server.address, r)
+	return http.ListenAndServe(server.address, handler)
 }
