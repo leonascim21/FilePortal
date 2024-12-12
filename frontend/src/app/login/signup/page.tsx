@@ -40,7 +40,7 @@ const SignUpPage = () => {
             if (response.ok) {
                 const responseData = await response.json();
                 console.log("Sign up successful:", responseData);
-                window.location.href = '/';
+                window.location.href = '/login';
             } else {
                 setErrorMessage('Sign up failed. Please try again.');
             }
