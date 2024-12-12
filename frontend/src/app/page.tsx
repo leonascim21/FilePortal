@@ -5,25 +5,18 @@ import ChestClosed from "@/../public/chest-closed.png";
 import ChestOpened from "@/../public/chest-opened.png";
 import BrandLogo from "@/../public/logos/vertical-white-blue-logo.png";
 import Link from "next/link";
-import {useEffect} from "react";
-import {useRouter} from "next/navigation";
-import {checkToken} from "@/utils/auth";
+import {useAuth} from "@/utils/AuthContext";
 
 export default function Home() {
 
-  const router = useRouter();
+  const { isLoggedIn } = useAuth();
 
-  useEffect(() => {
-    const verifyToken = async () => {
-      const isTokenValid = await checkToken();
-      if (!isTokenValid) {
-        localStorage.removeItem('auth-token');
-        router.push('/login');
-      }
-    };
-
-    verifyToken();
-  }, [router]);
+  if (!isLoggedIn) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
+    return;
+  }
 
   return (
     <div className="dark-purple-bg flex flex-col justify-center items-center min-h-screen">

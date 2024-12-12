@@ -1,7 +1,7 @@
 'use client'
 import React, { ChangeEvent, FormEvent, useState } from "react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
+import { useAuth } from "@/utils/AuthContext";
 
 type LoginData = {
     email: string;
@@ -14,7 +14,7 @@ const LoginPage = () => {
         password: ''
     });
     const [errorMessage, setErrorMessage] = useState<string>("");
-    const router = useRouter();
+    const { login } = useAuth();
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -38,9 +38,7 @@ const LoginPage = () => {
 
             if (response.ok) {
                 const responseData = await response.json();
-                console.log("Login successful:", responseData);
-                localStorage.setItem('auth-token', responseData.token);
-                router.push('/');
+                login(responseData.token);
             } else {
                 setErrorMessage('Login failed. Please check your credentials and try again.');
             }
