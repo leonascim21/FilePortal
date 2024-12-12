@@ -4,8 +4,10 @@ import (
 	"FilePortal/cmd/types"
 	"FilePortal/cmd/utils"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -24,6 +26,7 @@ func NewHandler(store types.UserStore) *Handler {
 func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/login", h.loginHandler).Methods("POST")
 	r.HandleFunc("/register", h.registerHandler).Methods("POST")
+	r.HandleFunc("/validate-token", h.validateTokenHandler).Methods("GET")
 }
 
 func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +47,13 @@ func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusAccepted, map[string]string{"message": "Successful login!"})
+	token, err := utils.GenerateJWT(payload.Email)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to generate token"))
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusAccepted, map[string]string{"token": token})
 }
 
 func (h *Handler) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,4 +91,24 @@ func (h *Handler) registerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "User registered!"})
+}
+
+func (h *Handler) validateTokenHandler(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
