@@ -1,11 +1,24 @@
+'use client'
 import Image from "next/image";
 import PortalImage from "@/../public/portal.png";
 import ChestClosed from "@/../public/chest-closed.png";
 import ChestOpened from "@/../public/chest-opened.png";
 import BrandLogo from "@/../public/logos/vertical-white-blue-logo.png";
 import Link from "next/link";
+import {useEffect} from "react";
+import {useRouter} from "next/navigation";
+import {checkToken} from "@/utils/auth";
 
 export default function Home() {
+
+  const router = useRouter();
+  useEffect(() => {
+    if (!checkToken()) {
+      localStorage.removeItem('auth-token');
+      router.push('/login');
+    }
+  }, []);
+
   return (
     <div className="dark-purple-bg flex flex-col justify-center items-center min-h-screen">
       <Image src={BrandLogo} alt="Brand Logo" width={250} height={250} />
