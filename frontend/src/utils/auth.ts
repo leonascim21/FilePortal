@@ -6,7 +6,7 @@ export const checkToken = async () => {
     }
 
     try {
-        const response = await fetch('http://localhost:8080/validate-token', {
+        const response = await fetch('https://frozen-eliminate-cheap-video.trycloudflare.com/validate-token', {
             method: 'GET',
             headers: {
                 'Authorization': `${token}`
