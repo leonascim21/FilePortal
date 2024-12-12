@@ -1,8 +1,5 @@
 'use client'
 import Image from "next/image";
-import PortalImage from "@/../public/portal.png";
-import ChestClosed from "@/../public/chest-closed.png";
-import ChestOpened from "@/../public/chest-opened.png";
 import BrandLogo from "@/../public/logos/vertical-white-blue-logo.png";
 import Link from "next/link";
 import {useAuth} from "@/utils/AuthContext";

@@ -4,7 +4,7 @@ import {useAuth} from "@/utils/AuthContext";
 
 export default function FileManagementPage() {
     //placeholders to test design
-    const [myFiles, setMyFiles] = useState<string[]>(["test.pdf", "placeholder.jpg"]);
+    const [myFiles ] = useState<string[]>(["test.pdf", "placeholder.jpg"]);
 
     const { isLoggedIn } = useAuth();
 
