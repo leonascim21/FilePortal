@@ -44,6 +44,7 @@ func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	utils.WriteJSON(w, http.StatusAccepted, map[string]string{"message": "Successful login!"})
 }
 
 func (h *Handler) registerHandler(w http.ResponseWriter, r *http.Request) {
