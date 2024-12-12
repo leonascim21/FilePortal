@@ -35,12 +35,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 } else {
                     localStorage.removeItem('auth-token');
                     setIsLoggedIn(false);
-                    router.push('/login');
+                    router.push('/');
                 }
             } catch (error) {
                 console.error('Error validating token:', error);
                 setIsLoggedIn(false);
-                router.push('/login');
+                router.push('/');
             }
         };
 
@@ -50,13 +50,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const login = (token: string) => {
         localStorage.setItem('auth-token', token);
         setIsLoggedIn(true);
-        router.push('/');
+        router.push('/dashboard');
     };
 
     const logout = () => {
         localStorage.removeItem('auth-token');
         setIsLoggedIn(false);
-        router.push('/login');
+        router.push('/');
     };
 
     return (

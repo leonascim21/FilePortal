@@ -15,54 +15,25 @@ export default function Home() {
     return <div>Loading...</div>;
   }
 
-  if (!isLoggedIn) {
+  if (isLoggedIn) {
     if (typeof window !== "undefined") {
-      window.location.href = "/login";
+      window.location.href = "/dashboard";
     }
     return null;
   }
 
   return (
-    <div className="dark-purple-bg flex flex-col justify-center items-center min-h-screen">
-      <Image src={BrandLogo} alt="Brand Logo" width={250} height={250} />
-      <div className="w-[100%] flex justify-center items-center">
-        <div>
-          <Image
-            src={ChestClosed}
-            alt="Chest Closed"
-            width={250}
-            height={250}
-          />
-          <Link href={"/store-files"}>
-            <button className="bg-white text-black px-4 py-2 rounded-md">
-              Store Files
-            </button>
+      <div className="dark-purple-bg flex flex-col justify-center items-center min-h-screen">
+          <Image src={BrandLogo} alt="Brand Logo" width={250} height={250}/>
+          <h1 className="text-white text-4xl font-bold mt-6 text-center">
+              A new way to store and share files
+          </h1>
+          <Link href="/login">
+              <button className="bg-purple-700 text-white px-6 py-3 rounded-md mt-8 hover:bg-purple-800">
+                  Get Started
+              </button>
           </Link>
-
-        </div>
-        <div>
-          <Image
-            src={ChestOpened}
-            alt="Chest Opened"
-            width={300}
-            height={300}
-          />
-          <Link href={"/open-files"}>
-            <button className="bg-white text-black px-4 py-2 rounded-md">
-              Open Files
-            </button>
-          </Link>
-        </div>
-
-        <div>
-          <Image src={PortalImage} alt="Portal" width={300} height={300} />
-          <Link href={"/portal"}>
-            <button className="bg-white text-black px-4 py-2 rounded-md">
-              Open Portal
-            </button>
-          </Link>
-        </div>
       </div>
-    </div>
   );
+
 }
