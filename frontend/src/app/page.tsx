@@ -12,12 +12,18 @@ import {checkToken} from "@/utils/auth";
 export default function Home() {
 
   const router = useRouter();
+
   useEffect(() => {
-    if (!checkToken()) {
-      localStorage.removeItem('auth-token');
-      router.push('/login');
-    }
-  }, []);
+    const verifyToken = async () => {
+      const isTokenValid = await checkToken();
+      if (!isTokenValid) {
+        localStorage.removeItem('auth-token');
+        router.push('/login');
+      }
+    };
+
+    verifyToken();
+  }, [router]);
 
   return (
     <div className="dark-purple-bg flex flex-col justify-center items-center min-h-screen">
