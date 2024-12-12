@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode, useEffect, useState } from
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
-    isLoggedIn: boolean;
+    isLoggedIn: boolean | null;
     login: (token: string) => void;
     logout: () => void;
 }
@@ -11,7 +11,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -24,10 +24,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             try {
                 const response = await fetch('https://frozen-eliminate-cheap-video.trycloudflare.com/validate-token', {
-                    method: 'POST',
+                    method: 'GET',
                     headers: {
                         'Authorization': `${token}`,
-                        'Content-Type': 'application/json',
                     },
                 });
 
@@ -46,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
 
         validateToken();
-    }, [router]);
+    }, []);
 
     const login = (token: string) => {
         localStorage.setItem('auth-token', token);

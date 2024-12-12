@@ -11,11 +11,15 @@ export default function Home() {
 
   const { isLoggedIn } = useAuth();
 
+  if (isLoggedIn === null) {
+    return <div>Loading...</div>;
+  }
+
   if (!isLoggedIn) {
     if (typeof window !== "undefined") {
       window.location.href = "/login";
     }
-    return;
+    return null;
   }
 
   return (
