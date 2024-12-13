@@ -27,6 +27,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/login", h.loginHandler).Methods("POST")
 	r.HandleFunc("/register", h.registerHandler).Methods("POST")
 	r.HandleFunc("/validate-token", h.validateTokenHandler).Methods("GET")
+	r.HandleFunc("/upload", h.uploadFileHandler).Methods("POST")
 }
 
 func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -111,4 +112,71 @@ func (h *Handler) validateTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
+	//max 10mb file upload
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "Invalid file upload", http.StatusBadRequest)
+		return
+	}
+
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "File retrieval failed", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	tokenString := r.Header.Get("Authorization")
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userEmail, ok := claims["email"].(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.store.GetUserByEmail(userEmail)
+	if err != nil {
+		http.Error(w, "User not found.", http.StatusUnauthorized)
+		return
+	}
+
+	uploader := utils.NewSpacesUploader()
+	fileURL, err := uploader.UploadFile(file, handler.Filename)
+	if err != nil {
+		http.Error(w, "File upload failed", http.StatusInternalServerError)
+		return
+	}
+
+	err = h.store.SaveFile(types.File{
+		UserID:     user.ID,
+		FileName:   handler.Filename,
+		FileURL:    fileURL,
+		UploadedAt: time.Now(),
+	})
+	if err != nil {
+		http.Error(w, "Failed to save file metadata.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"url": fileURL})
 }

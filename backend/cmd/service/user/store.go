@@ -102,3 +102,12 @@ func (s *Store) GetUserPasswordByEmail(email string) (string, error) {
 
 	return password, nil
 }
+
+func (s *Store) SaveFile(file types.File) error {
+	query := "INSERT INTO files (user_id, file_name, file_url, uploaded_at) VALUES (?, ?, ?, ?)"
+	_, err := s.db.Exec(query, file.UserID, file.FileName, file.FileURL, file.UploadedAt)
+	if err != nil {
+		return fmt.Errorf("failed to save file: %w", err)
+	}
+	return nil
+}

@@ -10,6 +10,7 @@ type UserStore interface {
 	GetUserByID(id int) (*User, error)
 	CreateUser(User) error
 	GetUserPasswordByEmail(email string) (string, error)
+	SaveFile(file File) error
 }
 
 type LoginUserPayload struct {
@@ -31,4 +32,12 @@ type User struct {
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+type File struct {
+	ID         int
+	UserID     int
+	FileName   string
+	FileURL    string
+	UploadedAt time.Time
 }
