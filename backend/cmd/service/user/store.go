@@ -156,3 +156,37 @@ func (s *Store) DeleteFileByID(fileID string) error {
 	}
 	return nil
 }
+
+func (s *Store) ShareFile(fileID, userID int) error {
+	query := "INSERT INTO file_shares (file_id, user_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE shared_at = CURRENT_TIMESTAMP"
+	_, err := s.db.Exec(query, fileID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to share file: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetSharedFiles(userID int) ([]types.File, error) {
+	query := `
+        SELECT f.id, f.user_id, f.file_name, f.file_url, f.uploaded_at
+        FROM files f
+        INNER JOIN file_shares fs ON f.id = fs.file_id
+        WHERE fs.user_id = ?`
+	rows, err := s.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch shared files: %w", err)
+	}
+	defer rows.Close()
+
+	var files []types.File
+	for rows.Next() {
+		var file types.File
+		err := rows.Scan(&file.ID, &file.UserID, &file.FileName, &file.FileURL, &file.UploadedAt)
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, file)
+	}
+
+	return files, nil
+}

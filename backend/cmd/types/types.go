@@ -14,6 +14,8 @@ type UserStore interface {
 	GetFilesByUserID(userID int) ([]File, error)
 	GetFileByID(fileID string) (*File, error)
 	DeleteFileByID(fileID string) error
+	ShareFile(fileID, userID int) error
+	GetSharedFiles(userID int) ([]File, error)
 }
 
 type LoginUserPayload struct {
@@ -43,4 +45,11 @@ type File struct {
 	FileName   string
 	FileURL    string
 	UploadedAt time.Time
+}
+
+type FileShare struct {
+	ID       int       `json:"id"`
+	FileID   int       `json:"fileId"`
+	UserID   int       `json:"userId"`
+	SharedAt time.Time `json:"sharedAt"`
 }

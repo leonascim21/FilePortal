@@ -30,6 +30,8 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/upload", h.uploadFileHandler).Methods("POST")
 	r.HandleFunc("/files", h.getUserFilesHandler).Methods("GET")
 	r.HandleFunc("/delete", h.deleteFileHandler).Methods("DELETE")
+	r.HandleFunc("/share", h.shareFileHandler).Methods("POST")
+	r.HandleFunc("/shared-files", h.getSharedFilesHandler).Methods("GET")
 }
 
 func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -212,4 +214,61 @@ func (h *Handler) deleteFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "File deleted successfully."})
+}
+
+func (h *Handler) shareFileHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.GetAuthenticatedUser(r, h.store)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	fileID := r.URL.Query().Get("file_id")
+	targetEmail := r.URL.Query().Get("target_email")
+
+	if fileID == "" || targetEmail == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	targetUser, err := h.store.GetUserByEmail(targetEmail)
+	if err != nil {
+		http.Error(w, "Target user not found.", http.StatusNotFound)
+		return
+	}
+
+	file, err := h.store.GetFileByID(fileID)
+	if err != nil {
+		http.Error(w, "File not found.", http.StatusNotFound)
+		return
+	}
+
+	if file.UserID != user.ID {
+		http.Error(w, "You do not have permission to share this file.", http.StatusForbidden)
+		return
+	}
+
+	err = h.store.ShareFile(file.ID, targetUser.ID)
+	if err != nil {
+		http.Error(w, "Failed to share file.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "File shared successfully."})
+}
+
+func (h *Handler) getSharedFilesHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.GetAuthenticatedUser(r, h.store)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	files, err := h.store.GetSharedFiles(user.ID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve shared files.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, files)
 }
