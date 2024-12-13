@@ -1,11 +1,29 @@
 'use client';
 import React, { useState, useEffect } from "react";
-import {useAuth} from "@/utils/AuthContext";
+import { useAuth } from "@/utils/AuthContext";
+
+type SharedUser = {
+    ID: number;
+    Email: string;
+};
+
+type File = {
+    ID: number;
+    FileName: string;
+    FileURL: string;
+};
+
+type SharedFile = {
+    FileName: string;
+    FileURL: string;
+    ID: number;
+    SharedWith: SharedUser[];
+};
 
 export default function Dashboard() {
-    const [myFiles, setMyFiles] = useState([]);
-    const [sharedFiles, setSharedFiles] = useState([]);
-    const [mySharedFiles, setMySharedFiles] = useState([]);
+    const [myFiles, setMyFiles] = useState<File[]>([]);
+    const [sharedFiles, setSharedFiles] = useState<File[]>([]);
+    const [mySharedFiles, setMySharedFiles] = useState<SharedFile[]>([]);
     const [activeTab, setActiveTab] = useState("myFiles");
     const [showSharePopup, setShowSharePopup] = useState(false);
     const [selectedFileID, setSelectedFileID] = useState<number | null>(null);
@@ -32,9 +50,8 @@ export default function Dashboard() {
                 return;
             }
 
-            const files = await response.json();
+            const files: File[] = await response.json();
             setMyFiles(files);
-
         } catch (error) {
             console.error("Error fetching files:", error);
         }
@@ -112,7 +129,7 @@ export default function Dashboard() {
                 return;
             }
 
-            const files = await response.json();
+            const files: File[] = await response.json();
             setSharedFiles(files);
         } catch (error) {
             console.error("Error fetching shared files:", error);
@@ -174,7 +191,6 @@ export default function Dashboard() {
                 return;
             }
 
-            console.log("File shared successfully.");
             setShowSharePopup(false);
             setShareEmail("");
             fetchMySharedFiles();
