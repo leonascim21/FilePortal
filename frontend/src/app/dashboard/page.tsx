@@ -5,6 +5,7 @@ import {useAuth} from "@/utils/AuthContext";
 export default function Dashboard() {
     const [myFiles, setMyFiles] = useState([]);
     const [sharedFiles, setSharedFiles] = useState([]);
+    const [mySharedFiles, setMySharedFiles] = useState([]);
     const [activeTab, setActiveTab] = useState("myFiles");
     const [showSharePopup, setShowSharePopup] = useState(false);
     const [selectedFileID, setSelectedFileID] = useState<number | null>(null);
@@ -118,6 +119,40 @@ export default function Dashboard() {
         }
     };
 
+    const fetchMySharedFiles = async () => {
+        const token = localStorage.getItem("auth-token");
+        if (!token) return;
+
+        try {
+            const response = await fetch("https://frozen-eliminate-cheap-video.trycloudflare.com/my-shared-files", {
+                method: "GET",
+                headers: {
+                    Authorization: `${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Failed to fetch my shared files: ${errorText}`);
+                return;
+            }
+
+            const files = await response.json();
+            const transformedFiles = files.map((file: any) => ({
+                FileName: file.fileName,
+                FileURL: file.fileUrl,
+                ID: file.id,
+                SharedWith: file.sharedWith.map((user: any) => ({
+                    ID: user.id,
+                    Email: user.email,
+                })),
+            }));
+            setMySharedFiles(transformedFiles);
+        } catch (error) {
+            console.error("Error fetching my shared files:", error);
+        }
+    };
+
     const handleFileShare = async () => {
         const token = localStorage.getItem("auth-token");
         if (!token || !selectedFileID || !shareEmail) return;
@@ -142,14 +177,42 @@ export default function Dashboard() {
             console.log("File shared successfully.");
             setShowSharePopup(false);
             setShareEmail("");
+            fetchMySharedFiles();
         } catch (error) {
             console.error("Error sharing file:", error);
+        }
+    };
+
+    const handleFileUnshare = async (fileID: number, targetUserID: number) => {
+        const token = localStorage.getItem("auth-token");
+
+        try {
+            const response = await fetch(
+                `https://frozen-eliminate-cheap-video.trycloudflare.com/unshare?file_id=${fileID}&target_user_id=${targetUserID}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Failed to unshare file: ${errorText}`);
+                return;
+            }
+
+            fetchMySharedFiles();
+        } catch (error) {
+            console.error("Error unsharing file:", error);
         }
     };
 
     useEffect(() => {
         fetchUserFiles();
         fetchSharedFiles();
+        fetchMySharedFiles();
     }, []);
 
     if (isLoggedIn === null) {
@@ -179,6 +242,12 @@ export default function Dashboard() {
                         onClick={() => setActiveTab("sharedFiles")}
                     >
                         Shared with Me
+                    </button>
+                    <button
+                        className={`px-4 py-2 rounded-md ${activeTab === "mySharedFiles" ? "bg-purple-700 text-white" : "bg-gray-300"}`}
+                        onClick={() => setActiveTab("mySharedFiles")}
+                    >
+                        My Shared Files
                     </button>
                 </div>
 
@@ -259,6 +328,53 @@ export default function Dashboard() {
                             </ul>
                         ) : (
                             <p className="text-gray-500 text-center">No files shared with you.</p>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "mySharedFiles" && (
+                    <div className="flex flex-col gap-4">
+                        {mySharedFiles && mySharedFiles.length > 0 ? (
+                            <ul className="list-none">
+                                {mySharedFiles.map(
+                                    (
+                                        file: {
+                                            FileName: string;
+                                            FileURL: string;
+                                            ID: number;
+                                            SharedWith?: { ID: number; Email: string }[];
+                                        },
+                                        index
+                                    ) => (
+                                        <li
+                                            key={index}
+                                            className="flex flex-col border-b p-3 text-gray-700"
+                                        >
+                                            <p className="font-bold">{file.FileName}</p>
+                                            <ul className="list-none">
+                                                {(file.SharedWith || []).map((sharedUser) => (
+                                                    <li
+                                                        key={sharedUser.ID}
+                                                        className="flex justify-between items-center mt-2"
+                                                    >
+                                                        <span>{sharedUser.Email}</span>
+                                                        <button
+                                                            className="text-red-700 hover:underline"
+                                                            onClick={() =>
+                                                                handleFileUnshare(file.ID, sharedUser.ID)
+                                                            }
+                                                        >
+                                                            Unshare
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </li>
+                                    )
+                                )}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-500 text-center">No files shared with others.</p>
                         )}
                     </div>
                 )}
