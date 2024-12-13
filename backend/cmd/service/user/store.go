@@ -190,3 +190,54 @@ func (s *Store) GetSharedFiles(userID int) ([]types.File, error) {
 
 	return files, nil
 }
+
+func (s *Store) GetMySharedFiles(userID int) ([]types.SharedFile, error) {
+	query := `
+        SELECT f.id, f.file_name, f.file_url, u.id AS shared_user_id, u.email AS shared_user_email
+        FROM file_shares fs
+        INNER JOIN files f ON fs.file_id = f.id
+        INNER JOIN users u ON fs.user_id = u.id
+        WHERE f.user_id = ?`
+	rows, err := s.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch my shared files: %w", err)
+	}
+	defer rows.Close()
+
+	var sharedFiles []types.SharedFile
+	for rows.Next() {
+		var sharedFile types.SharedFile
+		var sharedUser types.SharedUser
+
+		err := rows.Scan(&sharedFile.ID, &sharedFile.FileName, &sharedFile.FileURL, &sharedUser.ID, &sharedUser.Email)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		existingFileIndex := -1
+		for i, file := range sharedFiles {
+			if file.ID == sharedFile.ID {
+				existingFileIndex = i
+				break
+			}
+		}
+
+		if existingFileIndex != -1 {
+			sharedFiles[existingFileIndex].SharedWith = append(sharedFiles[existingFileIndex].SharedWith, sharedUser)
+		} else {
+			sharedFile.SharedWith = []types.SharedUser{sharedUser}
+			sharedFiles = append(sharedFiles, sharedFile)
+		}
+	}
+
+	return sharedFiles, nil
+}
+
+func (s *Store) UnshareFile(fileID, targetUserID int) error {
+	query := "DELETE FROM file_shares WHERE file_id = ? AND user_id = ?"
+	_, err := s.db.Exec(query, fileID, targetUserID)
+	if err != nil {
+		return fmt.Errorf("failed to unshare file: %w", err)
+	}
+	return nil
+}

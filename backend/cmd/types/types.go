@@ -16,6 +16,8 @@ type UserStore interface {
 	DeleteFileByID(fileID string) error
 	ShareFile(fileID, userID int) error
 	GetSharedFiles(userID int) ([]File, error)
+	GetMySharedFiles(userID int) ([]SharedFile, error)
+	UnshareFile(fileID, targetUserID int) error
 }
 
 type LoginUserPayload struct {
@@ -52,4 +54,16 @@ type FileShare struct {
 	FileID   int       `json:"fileId"`
 	UserID   int       `json:"userId"`
 	SharedAt time.Time `json:"sharedAt"`
+}
+
+type SharedFile struct {
+	ID         int          `json:"id"`
+	FileName   string       `json:"fileName"`
+	FileURL    string       `json:"fileUrl"`
+	SharedWith []SharedUser `json:"sharedWith"`
+}
+
+type SharedUser struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
 }

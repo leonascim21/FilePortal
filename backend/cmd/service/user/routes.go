@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -32,6 +33,8 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/delete", h.deleteFileHandler).Methods("DELETE")
 	r.HandleFunc("/share", h.shareFileHandler).Methods("POST")
 	r.HandleFunc("/shared-files", h.getSharedFilesHandler).Methods("GET")
+	r.HandleFunc("/my-shared-files", h.getMySharedFilesHandler).Methods("GET")
+	r.HandleFunc("/unshare", h.unshareFileHandler).Methods("DELETE")
 }
 
 func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -271,4 +274,61 @@ func (h *Handler) getSharedFilesHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	utils.WriteJSON(w, http.StatusOK, files)
+}
+
+func (h *Handler) getMySharedFilesHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.GetAuthenticatedUser(r, h.store)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	files, err := h.store.GetMySharedFiles(user.ID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve shared files.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, files)
+}
+
+func (h *Handler) unshareFileHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.GetAuthenticatedUser(r, h.store)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	fileID := r.URL.Query().Get("file_id")
+	targetUserID := r.URL.Query().Get("target_user_id")
+
+	if fileID == "" || targetUserID == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.store.GetFileByID(fileID)
+	if err != nil {
+		http.Error(w, "File not found.", http.StatusNotFound)
+		return
+	}
+
+	if file.UserID != user.ID {
+		http.Error(w, "You do not have permission to unshare this file.", http.StatusForbidden)
+		return
+	}
+
+	targetID, err := strconv.Atoi(targetUserID)
+	if err != nil {
+		http.Error(w, "Invalid target user id.", http.StatusBadRequest)
+		return
+	}
+
+	err = h.store.UnshareFile(file.ID, targetID)
+	if err != nil {
+		http.Error(w, "Failed to unshare file.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "File unshared successfully."})
 }
