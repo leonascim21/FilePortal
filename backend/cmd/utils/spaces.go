@@ -58,3 +58,11 @@ func (u *SpacesUploader) UploadFile(file io.Reader, filename string) (string, er
 	log.Printf("File uploaded: %s", fileURL)
 	return fileURL, nil
 }
+
+func (u *SpacesUploader) DeleteFile(filename string) (*s3.DeleteObjectOutput, error) {
+	input := &s3.DeleteObjectInput{
+		Bucket: aws.String(u.bucketName),
+		Key:    aws.String(fmt.Sprintf("uploads/%s", filename)),
+	}
+	return u.client.DeleteObject(input)
+}

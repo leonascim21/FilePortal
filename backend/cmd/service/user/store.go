@@ -132,3 +132,27 @@ func (s *Store) GetFilesByUserID(userID int) ([]types.File, error) {
 
 	return files, nil
 }
+
+func (s *Store) GetFileByID(fileID string) (*types.File, error) {
+	query := "SELECT id, user_id, file_name, file_url, uploaded_at FROM files WHERE id = ?"
+	row := s.db.QueryRow(query, fileID)
+
+	var file types.File
+	err := row.Scan(&file.ID, &file.UserID, &file.FileName, &file.FileURL, &file.UploadedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("file not found")
+		}
+		return nil, fmt.Errorf("failed to retrieve file: %w", err)
+	}
+	return &file, nil
+}
+
+func (s *Store) DeleteFileByID(fileID string) error {
+	query := "DELETE FROM files WHERE id = ?"
+	_, err := s.db.Exec(query, fileID)
+	if err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+	return nil
+}

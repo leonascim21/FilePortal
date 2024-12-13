@@ -12,6 +12,8 @@ type UserStore interface {
 	GetUserPasswordByEmail(email string) (string, error)
 	SaveFile(file File) error
 	GetFilesByUserID(userID int) ([]File, error)
+	GetFileByID(fileID string) (*File, error)
+	DeleteFileByID(fileID string) error
 }
 
 type LoginUserPayload struct {

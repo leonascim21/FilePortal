@@ -29,6 +29,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/validate-token", h.validateTokenHandler).Methods("GET")
 	r.HandleFunc("/upload", h.uploadFileHandler).Methods("POST")
 	r.HandleFunc("/files", h.getUserFilesHandler).Methods("GET")
+	r.HandleFunc("/delete", h.deleteFileHandler).Methods("DELETE")
 }
 
 func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +117,13 @@ func (h *Handler) validateTokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
+
+	user, err := utils.GetAuthenticatedUser(r, h.store)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
 	//max 10mb file upload
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Invalid file upload", http.StatusBadRequest)
@@ -128,38 +136,6 @@ func (h *Handler) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
-	tokenString := r.Header.Get("Authorization")
-
-	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	userEmail, ok := claims["email"].(string)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.store.GetUserByEmail(userEmail)
-	if err != nil {
-		http.Error(w, "User not found.", http.StatusUnauthorized)
-		return
-	}
 
 	uploader := utils.NewSpacesUploader()
 	fileURL, err := uploader.UploadFile(file, handler.Filename)
@@ -183,39 +159,9 @@ func (h *Handler) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getUserFilesHandler(w http.ResponseWriter, r *http.Request) {
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	userEmail, ok := claims["email"].(string)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	user, err := h.store.GetUserByEmail(userEmail)
+	user, err := utils.GetAuthenticatedUser(r, h.store)
 	if err != nil {
-		http.Error(w, "User not found.", http.StatusUnauthorized)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -226,4 +172,44 @@ func (h *Handler) getUserFilesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, files)
+}
+
+func (h *Handler) deleteFileHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.GetAuthenticatedUser(r, h.store)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	fileID := r.URL.Query().Get("id")
+	if fileID == "" {
+		http.Error(w, "Missing file ID.", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.store.GetFileByID(fileID)
+	if err != nil {
+		http.Error(w, "File not found.", http.StatusNotFound)
+		return
+	}
+
+	if file.UserID != user.ID {
+		http.Error(w, "No permission to delete this file.", http.StatusForbidden)
+		return
+	}
+
+	uploader := utils.NewSpacesUploader()
+	_, err = uploader.DeleteFile(file.FileName)
+	if err != nil {
+		http.Error(w, "Failed to delete file", http.StatusInternalServerError)
+		return
+	}
+
+	err = h.store.DeleteFileByID(fileID)
+	if err != nil {
+		http.Error(w, "Failed to delete file metadata.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "File deleted successfully."})
 }

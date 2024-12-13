@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"FilePortal/cmd/types"
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
@@ -40,4 +41,39 @@ func GenerateJWT(email string) (string, error) {
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
+}
+
+func GetAuthenticatedUser(r *http.Request, store types.UserStore) (*types.User, error) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	userEmail, ok := claims["email"].(string)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	user, err := store.GetUserByEmail(userEmail)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	return user, nil
 }

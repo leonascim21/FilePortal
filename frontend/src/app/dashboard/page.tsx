@@ -65,6 +65,29 @@ export default function Dashboard() {
         }
     };
 
+    const handleFileDelete = async (fileID: number) => {
+        const token = localStorage.getItem("auth-token");
+
+        try {
+            const response = await fetch(`https://frozen-eliminate-cheap-video.trycloudflare.com/delete?id=${fileID}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Failed to delete file: ${errorText}`);
+                return;
+            }
+
+            fetchUserFiles();
+        } catch (error) {
+            console.error("Error deleting file:", error);
+        }
+    };
+
     useEffect(() => {
         fetchUserFiles();
     }, []);
@@ -99,18 +122,26 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-4">
                     {myFiles &&  myFiles.length > 0 ? (
                         <ul className="list-none">
-                            {myFiles.map((file: { FileName: string; FileURL: string }, index) => (
+                            {myFiles.map((file: { ID: number; FileName: string; FileURL: string }, index) => (
                                 <li
                                     key={index}
                                     className="flex justify-between items-center border-b p-3 text-gray-700"
                                 >
                                     <p>{file.FileName}</p>
-                                    <button
-                                        className="text-purple-700 hover:underline"
-                                        onClick={() => window.open(file.FileURL, "_blank")}
-                                    >
-                                        Download
-                                    </button>
+                                    <div className="flex gap-4">
+                                        <button
+                                            className="text-purple-700 hover:underline"
+                                            onClick={() => window.open(file.FileURL, "_blank")}
+                                        >
+                                            Download
+                                        </button>
+                                        <button
+                                            className="text-red-700 hover:underline"
+                                            onClick={() => handleFileDelete(file.ID)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
