@@ -52,6 +52,7 @@ export default function Dashboard() {
 
             const files: File[] = await response.json();
             setMyFiles(files);
+
         } catch (error) {
             console.error("Error fetching files:", error);
         }
@@ -154,15 +155,23 @@ export default function Dashboard() {
                 return;
             }
 
-            const files = await response.json();
-            const transformedFiles = files.map((file: any) => ({
+            const files: {
+                fileName: string;
+                fileUrl: string;
+                id: number;
+                sharedWith: { id: number; email: string }[] | null;
+            }[] = await response.json();
+
+            const transformedFiles: SharedFile[] = files.map((file) => ({
                 FileName: file.fileName,
                 FileURL: file.fileUrl,
                 ID: file.id,
-                SharedWith: file.sharedWith.map((user: any) => ({
-                    ID: user.id,
-                    Email: user.email,
-                })),
+                SharedWith: file.sharedWith
+                    ? file.sharedWith.map((user) => ({
+                        ID: user.id,
+                        Email: user.email,
+                    }))
+                    : [],
             }));
             setMySharedFiles(transformedFiles);
         } catch (error) {
