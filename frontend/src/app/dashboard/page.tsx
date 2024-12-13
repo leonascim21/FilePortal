@@ -4,6 +4,11 @@ import {useAuth} from "@/utils/AuthContext";
 
 export default function Dashboard() {
     const [myFiles, setMyFiles] = useState([]);
+    const [sharedFiles, setSharedFiles] = useState([]);
+    const [activeTab, setActiveTab] = useState("myFiles");
+    const [showSharePopup, setShowSharePopup] = useState(false);
+    const [selectedFileID, setSelectedFileID] = useState<number | null>(null);
+    const [shareEmail, setShareEmail] = useState("");
     const { isLoggedIn } = useAuth();
 
     const fetchUserFiles = async () => {
@@ -88,8 +93,63 @@ export default function Dashboard() {
         }
     };
 
+    const fetchSharedFiles = async () => {
+        const token = localStorage.getItem("auth-token");
+        if (!token) return;
+
+        try {
+            const response = await fetch("https://frozen-eliminate-cheap-video.trycloudflare.com/shared-files", {
+                method: "GET",
+                headers: {
+                    Authorization: `${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Failed to fetch shared files: ${errorText}`);
+                return;
+            }
+
+            const files = await response.json();
+            setSharedFiles(files);
+        } catch (error) {
+            console.error("Error fetching shared files:", error);
+        }
+    };
+
+    const handleFileShare = async () => {
+        const token = localStorage.getItem("auth-token");
+        if (!token || !selectedFileID || !shareEmail) return;
+
+        try {
+            const response = await fetch(
+                `https://frozen-eliminate-cheap-video.trycloudflare.com/share?file_id=${selectedFileID}&target_email=${shareEmail}`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Failed to share file: ${errorText}`);
+                return;
+            }
+
+            console.log("File shared successfully.");
+            setShowSharePopup(false);
+            setShareEmail("");
+        } catch (error) {
+            console.error("Error sharing file:", error);
+        }
+    };
+
     useEffect(() => {
         fetchUserFiles();
+        fetchSharedFiles();
     }, []);
 
     if (isLoggedIn === null) {
@@ -106,50 +166,136 @@ export default function Dashboard() {
     return (
         <div className="dark-purple-bg flex flex-col items-center justify-center min-h-screen">
             <div className="bg-white p-8 rounded-lg w-full max-w-2xl">
-                <h1 className="text-2xl font-bold text-center mb-6">My Files</h1>
-                <button
-                    className="bg-purple-700 text-white px-4 py-2 rounded-md hover:bg-purple-800 mb-6"
-                    onClick={() => document.getElementById("fileInput")?.click()}
-                >
-                    Upload a File
-                </button>
-                <input
-                    id="fileInput"
-                    type="file"
-                    style={{ display: "none" }}
-                    onChange={handleFileUpload}
-                />
-                <div className="flex flex-col gap-4">
-                    {myFiles &&  myFiles.length > 0 ? (
-                        <ul className="list-none">
-                            {myFiles.map((file: { ID: number; FileName: string; FileURL: string }, index) => (
-                                <li
-                                    key={index}
-                                    className="flex justify-between items-center border-b p-3 text-gray-700"
-                                >
-                                    <p>{file.FileName}</p>
-                                    <div className="flex gap-4">
+                <h1 className="text-2xl font-bold text-center mb-6">Dashboard</h1>
+                <div className="flex gap-4 justify-center mb-6">
+                    <button
+                        className={`px-4 py-2 rounded-md ${activeTab === "myFiles" ? "bg-purple-700 text-white" : "bg-gray-300"}`}
+                        onClick={() => setActiveTab("myFiles")}
+                    >
+                        My Files
+                    </button>
+                    <button
+                        className={`px-4 py-2 rounded-md ${activeTab === "sharedFiles" ? "bg-purple-700 text-white" : "bg-gray-300"}`}
+                        onClick={() => setActiveTab("sharedFiles")}
+                    >
+                        Shared with Me
+                    </button>
+                </div>
+
+                {activeTab === "myFiles" && (
+                    <>
+                        <button
+                            className="bg-purple-700 text-white px-4 py-2 rounded-md hover:bg-purple-800 mb-6"
+                            onClick={() => document.getElementById("fileInput")?.click()}
+                        >
+                            Upload a File
+                        </button>
+                        <input
+                            id="fileInput"
+                            type="file"
+                            style={{ display: "none" }}
+                            onChange={handleFileUpload}
+                        />
+                        <div className="flex flex-col gap-4">
+                            {myFiles && myFiles.length > 0 ? (
+                                <ul className="list-none">
+                                    {myFiles.map((file: { ID: number; FileName: string; FileURL: string }, index) => (
+                                        <li
+                                            key={index}
+                                            className="flex justify-between items-center border-b p-3 text-gray-700"
+                                        >
+                                            <p>{file.FileName}</p>
+                                            <div className="flex gap-4">
+                                                <button
+                                                    className="text-purple-700 hover:underline"
+                                                    onClick={() => window.open(file.FileURL, "_blank")}
+                                                >
+                                                    Download
+                                                </button>
+                                                <button
+                                                    className="text-red-700 hover:underline"
+                                                    onClick={() => handleFileDelete(file.ID)}
+                                                >
+                                                    Delete
+                                                </button>
+                                                <button
+                                                    className="text-blue-700 hover:underline"
+                                                    onClick={() => {
+                                                        setSelectedFileID(file.ID);
+                                                        setShowSharePopup(true);
+                                                    }}
+                                                >
+                                                    Share
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-gray-500 text-center">No files available.</p>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {activeTab === "sharedFiles" && (
+                    <div className="flex flex-col gap-4">
+                        {sharedFiles && sharedFiles.length > 0 ? (
+                            <ul className="list-none">
+                                {sharedFiles.map((file: { FileName: string; FileURL: string }, index) => (
+                                    <li
+                                        key={index}
+                                        className="flex justify-between items-center border-b p-3 text-gray-700"
+                                    >
+                                        <p>{file.FileName}</p>
                                         <button
                                             className="text-purple-700 hover:underline"
                                             onClick={() => window.open(file.FileURL, "_blank")}
                                         >
                                             Download
                                         </button>
-                                        <button
-                                            className="text-red-700 hover:underline"
-                                            onClick={() => handleFileDelete(file.ID)}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-gray-500 text-center">No files available.</p>
-                    )}
-                </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-gray-500 text-center">No files shared with you.</p>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* share file popup */}
+            {showSharePopup && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white p-6 rounded-lg w-96">
+                        <h2 className="text-xl font-bold mb-4">Share File</h2>
+                        <input
+                            type="email"
+                            className="border border-gray-300 p-2 w-full mb-4"
+                            placeholder="Enter email address"
+                            value={shareEmail}
+                            onChange={(e) => setShareEmail(e.target.value)}
+                        />
+                        <div className="flex justify-end gap-4">
+                            <button
+                                className="bg-gray-500 text-white px-4 py-2 rounded-md"
+                                onClick={() => {
+                                    setShowSharePopup(false);
+                                    setShareEmail("");
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="bg-purple-700 text-white px-4 py-2 rounded-md hover:bg-purple-800"
+                                onClick={handleFileShare}
+                            >
+                                Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
