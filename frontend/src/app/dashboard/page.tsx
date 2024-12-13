@@ -1,12 +1,38 @@
 'use client';
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {useAuth} from "@/utils/AuthContext";
 
 export default function Dashboard() {
-    //placeholders to test design
-    const [myFiles ] = useState<string[]>(["test.pdf", "placeholder.jpg"]);
-
+    const [myFiles, setMyFiles] = useState([]);
     const { isLoggedIn } = useAuth();
+
+    const fetchUserFiles = async () => {
+        const token = localStorage.getItem("auth-token");
+        if (!token) {
+            return;
+        }
+
+        try {
+            const response = await fetch("https://frozen-eliminate-cheap-video.trycloudflare.com/files", {
+                method: "GET",
+                headers: {
+                    Authorization: `${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Failed to fetch files: ${errorText}`);
+                return;
+            }
+
+            const files = await response.json();
+            setMyFiles(files);
+
+        } catch (error) {
+            console.error("Error fetching files:", error);
+        }
+    };
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || event.target.files.length === 0) {
@@ -33,10 +59,15 @@ export default function Dashboard() {
                 console.error(`Failed to upload file: ${errorText}`);
             }
 
+            fetchUserFiles();
         } catch (error) {
             console.error("Error uploading file:", error);
         }
     };
+
+    useEffect(() => {
+        fetchUserFiles();
+    }, []);
 
     if (isLoggedIn === null) {
         return <div>Loading...</div>;
@@ -66,16 +97,17 @@ export default function Dashboard() {
                     onChange={handleFileUpload}
                 />
                 <div className="flex flex-col gap-4">
-                    {myFiles.length > 0 ? (
+                    {myFiles &&  myFiles.length > 0 ? (
                         <ul className="list-none">
-                            {myFiles.map((file, index) => (
+                            {myFiles.map((file: { FileName: string; FileURL: string }, index) => (
                                 <li
                                     key={index}
                                     className="flex justify-between items-center border-b p-3 text-gray-700"
                                 >
-                                    <p>{file}</p>
+                                    <p>{file.FileName}</p>
                                     <button
                                         className="text-purple-700 hover:underline"
+                                        onClick={() => window.open(file.FileURL, "_blank")}
                                     >
                                         Download
                                     </button>

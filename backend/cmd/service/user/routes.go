@@ -28,6 +28,7 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/register", h.registerHandler).Methods("POST")
 	r.HandleFunc("/validate-token", h.validateTokenHandler).Methods("GET")
 	r.HandleFunc("/upload", h.uploadFileHandler).Methods("POST")
+	r.HandleFunc("/files", h.getUserFilesHandler).Methods("GET")
 }
 
 func (h *Handler) loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -179,4 +180,50 @@ func (h *Handler) uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"url": fileURL})
+}
+
+func (h *Handler) getUserFilesHandler(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+	if err != nil || !token.Valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userEmail, ok := claims["email"].(string)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.store.GetUserByEmail(userEmail)
+	if err != nil {
+		http.Error(w, "User not found.", http.StatusUnauthorized)
+		return
+	}
+
+	files, err := h.store.GetFilesByUserID(user.ID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve files.", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, files)
 }

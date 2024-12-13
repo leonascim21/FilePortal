@@ -111,3 +111,24 @@ func (s *Store) SaveFile(file types.File) error {
 	}
 	return nil
 }
+
+func (s *Store) GetFilesByUserID(userID int) ([]types.File, error) {
+	query := "SELECT id, user_id, file_name, file_url, uploaded_at FROM files WHERE user_id = ?"
+	rows, err := s.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query files: %w", err)
+	}
+	defer rows.Close()
+
+	var files []types.File
+	for rows.Next() {
+		var file types.File
+		err := rows.Scan(&file.ID, &file.UserID, &file.FileName, &file.FileURL, &file.UploadedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan file row: %w", err)
+		}
+		files = append(files, file)
+	}
+
+	return files, nil
+}
